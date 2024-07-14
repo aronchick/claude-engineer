@@ -1,3 +1,4 @@
+# database.py
 import sqlite3
 from contextlib import contextmanager
 from typing import Any, Dict, List, Tuple
@@ -48,7 +49,6 @@ def execute_transaction(queries: List[Tuple[str, tuple]]) -> List[List[Tuple]]:
     with get_db_connection() as conn:
         with get_db_cursor(conn) as cursor:
             for query, params in queries:
-                print(f"Executing query: {query}")
                 cursor.execute(query, params)
                 if query.strip().upper().startswith("SELECT"):
                     results.append(cursor.fetchall())
@@ -63,25 +63,11 @@ def ensure_table_exists(table_name: str) -> List[List[Tuple]]:
         return execute_transaction(
             [
                 (
-                    """
-            CREATE TABLE IF NOT EXISTS conversation_history (
+                    f"""
+            CREATE TABLE IF NOT EXISTS {table_name} (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 role TEXT NOT NULL,
                 content TEXT NOT NULL
-            )
-            """,
-                    (),
-                )
-            ]
-        )
-    elif table_name == "token_count":
-        return execute_transaction(
-            [
-                (
-                    """
-            CREATE TABLE IF NOT EXISTS token_count (
-                id INTEGER PRIMARY KEY CHECK (id = 1),
-                total_tokens INTEGER
             )
             """,
                     (),

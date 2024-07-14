@@ -1,3 +1,5 @@
+import os
+
 from anthropic import Anthropic
 from rich.console import Console
 from rich.panel import Panel
@@ -5,7 +7,9 @@ from tavily import TavilyClient
 
 import config as cfg
 from chat import chat_with_claude
-from database import save_state
+
+# At the top of the file, add:
+from database import conversation_history, save_state
 
 console = Console()
 
@@ -22,9 +26,6 @@ client = Anthropic(api_key=cfg.ANTHROPIC_API_KEY)
 
 # Initialize the Tavily client
 tavily = TavilyClient(api_key=cfg.TAVILY_API_KEY)
-
-# Set up the conversation memory
-conversation_history = []
 
 # automode flag
 automode = False
@@ -64,9 +65,28 @@ def main():
                 break
 
             if user_input.lower() == "image":
-                image_path = console.input("Enter the path to your image: ")
-                user_input = console.input("Enter your question about the image: ")
-                response, _ = chat_with_claude(user_input, image_path)
+                image_path = (
+                    console.input(
+                        "[bold cyan]Drag and drop your image here, then press enter:[/bold cyan] "
+                    )
+                    .strip()
+                    .replace("'", "")
+                )
+
+                if os.path.isfile(image_path):
+                    user_input = console.input(
+                        "[bold cyan]You (prompt for image):[/bold cyan] "
+                    )
+                    response, _ = chat_with_claude(user_input, image_path)
+                else:
+                    console.print(
+                        Panel(
+                            "Invalid image path. Please try again.",
+                            title="Error",
+                            style="bold red",
+                        )
+                    )
+                    continue
             elif user_input.lower().startswith("automode"):
                 try:
                     parts = user_input.split()
@@ -93,45 +113,69 @@ def main():
                     user_input = console.input("[bold cyan]You:[/bold cyan] ")
 
                     iteration_count = 0
-                    while automode and iteration_count < max_iterations:
-                        response, exit_continuation = chat_with_claude(
-                            user_input,
-                            current_iteration=iteration_count + 1,
-                            max_iterations=max_iterations,
+                    try:
+                        while automode and iteration_count < max_iterations:
+                            response, exit_continuation = chat_with_claude(
+                                user_input,
+                                current_iteration=iteration_count + 1,
+                                max_iterations=max_iterations,
+                            )
+
+                            if (
+                                exit_continuation
+                                or CONTINUATION_EXIT_PHRASE in response
+                            ):
+                                console.print(
+                                    Panel(
+                                        "Automode completed.",
+                                        title_align="left",
+                                        title="Automode",
+                                        style="green",
+                                    )
+                                )
+                                automode = False
+                            else:
+                                console.print(
+                                    Panel(
+                                        f"Continuation iteration {iteration_count + 1} completed. Press Ctrl+C to exit automode. ",
+                                        title_align="left",
+                                        title="Automode",
+                                        style="yellow",
+                                    )
+                                )
+                                user_input = "Continue with the next step. Or STOP by saying 'AUTOMODE_COMPLETE' if you think you've achieved the results established in the original request."
+                            iteration_count += 1
+
+                            if iteration_count >= max_iterations:
+                                console.print(
+                                    Panel(
+                                        "Max iterations reached. Exiting automode.",
+                                        title_align="left",
+                                        title="Automode",
+                                        style="bold red",
+                                    )
+                                )
+                                automode = False
+                    except KeyboardInterrupt:
+                        console.print(
+                            Panel(
+                                "\nAutomode interrupted by user. Exiting automode.",
+                                title_align="left",
+                                title="Automode",
+                                style="bold red",
+                            )
                         )
-
-                        if exit_continuation or CONTINUATION_EXIT_PHRASE in response:
-                            console.print(
-                                Panel(
-                                    "Automode completed.",
-                                    title_align="left",
-                                    title="Automode",
-                                    style="green",
-                                )
+                        automode = False
+                        if (
+                            conversation_history
+                            and conversation_history[-1]["role"] == "user"
+                        ):
+                            conversation_history.append(
+                                {
+                                    "role": "assistant",
+                                    "content": "Automode interrupted. How can I assist you further?",
+                                }
                             )
-                            automode = False
-                        else:
-                            console.print(
-                                Panel(
-                                    f"Continuation iteration {iteration_count + 1} completed. Press Ctrl+C to exit automode. ",
-                                    title_align="left",
-                                    title="Automode",
-                                    style="yellow",
-                                )
-                            )
-                            user_input = "Continue with the next step. Or STOP by saying 'AUTOMODE_COMPLETE' if you think you've achieved the results established in the original request."
-                        iteration_count += 1
-
-                        if iteration_count >= max_iterations:
-                            console.print(
-                                Panel(
-                                    "Max iterations reached. Exiting automode.",
-                                    title_align="left",
-                                    title="Automode",
-                                    style="bold red",
-                                )
-                            )
-                            automode = False
                 except KeyboardInterrupt:
                     console.print(
                         Panel(

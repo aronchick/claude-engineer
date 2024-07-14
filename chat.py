@@ -17,7 +17,7 @@ console = Console()
 
 
 def get_client():
-    Anthropic(api_key=ANTHROPIC_API_KEY)
+    return Anthropic(api_key=ANTHROPIC_API_KEY)
 
 
 def chat_with_claude(

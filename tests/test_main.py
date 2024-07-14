@@ -41,11 +41,16 @@ def test_main_exit_and_chat(user_input, expected_calls, monkeypatch):
 def test_main_image_chat(monkeypatch):
     responses = iter(["image", "/path/to/image.jpg", "Describe this image", "exit"])
     monkeypatch.setattr("builtins.input", lambda: next(responses))
+    monkeypatch.setattr(
+        "os.path.isfile", lambda x: True
+    )  # Mock os.path.isfile to always return True
 
     with patch("main.chat_with_claude") as mock_chat:
         mock_chat.return_value = ("Image description", False)
         main.main()
-        mock_chat.assert_called_once_with("Describe this image", "/path/to/image.jpg")
+        mock_chat.assert_called_once_with(
+            "Describe this image", image_path="/path/to/image.jpg"
+        )
 
 
 def test_main_automode(monkeypatch):

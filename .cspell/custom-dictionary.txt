@@ -1,9 +1,19 @@
 automode
 autouse
+<<<<<<< HEAD
 dotenv
 keepends
 MAINMODEL
 monokai
+=======
+delenv
+dotenv
+excinfo
+keepends
+MAINMODEL
+monokai
+setenv
+>>>>>>> adding-sqlite-and-tests
 tavily
 Tavily
 tofile

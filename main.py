@@ -1,13 +1,33 @@
+from anthropic import Anthropic
 from rich.console import Console
 from rich.panel import Panel
+from tavily import TavilyClient
 
+import config as cfg
 from chat import chat_with_claude
-from config import CONTINUATION_EXIT_PHRASE, MAX_CONTINUATION_ITERATIONS
 from database import save_state
 
 console = Console()
-automode = False
+
+# Add these constants at the top of the file
+CONTINUATION_EXIT_PHRASE = cfg.CONTINUATION_EXIT_PHRASE
+MAX_CONTINUATION_ITERATIONS = cfg.MAX_CONTINUATION_ITERATIONS
+
+# Models to use
+MAINMODEL = cfg.MAINMODEL
+TOOLCHECKERMODEL = cfg.TOOLCHECKERMODEL
+
+# Initialize the Anthropic client
+client = Anthropic(api_key=cfg.ANTHROPIC_API_KEY)
+
+# Initialize the Tavily client
+tavily = TavilyClient(api_key=cfg.TAVILY_API_KEY)
+
+# Set up the conversation memory
 conversation_history = []
+
+# automode flag
+automode = False
 
 
 def main():

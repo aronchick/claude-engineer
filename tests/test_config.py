@@ -11,6 +11,7 @@ def isolate_env(monkeypatch):
     original_environ = dict(os.environ)
     monkeypatch.delenv("ANTHROPIC_API_KEY", raising=False)
     monkeypatch.delenv("TAVILY_API_KEY", raising=False)
+    monkeypatch.delenv("TESTING", raising=False)  # Ensure TESTING is not set
     yield
     os.environ.clear()
     os.environ.update(original_environ)
@@ -23,7 +24,7 @@ def load_config():
             del sys.modules["config"]
         import config
 
-        config.load_env()  # Explicitly call load_env() after import
+        importlib.reload(config)
         return config
 
     return _load_config

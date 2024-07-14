@@ -1,7 +1,14 @@
 # conftest.py
+import os
+
 import pytest
 
-import database
+# Set up the test environment variables before any imports
+os.environ["TESTING"] = "true"
+os.environ.setdefault("ANTHROPIC_API_KEY", "test_anthropic_key")
+os.environ.setdefault("TAVILY_API_KEY", "test_tavily_key")
+
+import database  # Now import database after setting up the environment
 
 
 @pytest.fixture(autouse=True, scope="function")
@@ -16,3 +23,12 @@ def use_in_memory_database():
     database.close_db_connection()  # Close the connection after the test
     database.conversation_history = []  # Reset conversation_history after test
     database.DB_FILE = original_db_file
+
+
+@pytest.fixture(autouse=True, scope="function")
+def reset_config_env(monkeypatch):
+    """Reset environment variables for config after each test."""
+    yield
+    import config
+
+    config.load_env()  # Reload environment variables after each test

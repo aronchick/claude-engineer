@@ -5,7 +5,6 @@ import pytest
 
 import database
 from database import (
-    conversation_history,
     ensure_table_exists,
     execute_transaction,
     get_total_tokens,
